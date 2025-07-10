@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
 
+
 class TaskType(str, Enum):
     call = "call"
     sms = "sms"

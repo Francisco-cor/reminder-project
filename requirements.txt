@@ -10,3 +10,4 @@ apscheduler  # Excelente para el worker de tareas programadas
 google-api-python-client
 google-auth-oauthlib
 msal
+requests

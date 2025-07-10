@@ -38,6 +38,13 @@ def process_pending_tasks():
                     twilio_service.make_call(to_number=task.target, message=task.message)
                 elif task.task_type == TaskType.whatsapp:
                     twilio_service.send_whatsapp(to_number=task.target, message=task.message)
+                elif task.task_type == TaskType.email:
+                    subject = task.extra_data.get('subject', 'Recordatorio del Sistema')
+                    email_service.send_email(
+                        to_email=task.target, 
+                        subject=subject, 
+                        body=task.message
+                    )
 
                 print(f"Worker: Tarea ID {task.id} completada exitosamente.", flush=True)
                 update_task_status(db, task.id, TaskStatus.done)
