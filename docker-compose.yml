@@ -1,10 +1,9 @@
-version: '3.8'
-
 services:
   # Servicio de la API de FastAPI
   api:
     build: .
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # El comando ahora es relativo al WORKDIR /app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload # <--- CORREGIDO
     volumes:
       - ./app:/app
     ports:
@@ -17,7 +16,8 @@ services:
   # Servicio del Worker para tareas programadas
   worker:
     build: .
-    command: python app/worker/scheduler.py
+    # El comando ahora es relativo al WORKDIR /app
+    command: python -m worker.scheduler  # <--- CORREGIDO
     volumes:
       - ./app:/app
     env_file:
@@ -35,7 +35,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
     ports:
-      - "5432:5432" # Exponer solo si necesitas conectar desde tu máquina local
+      - "5432:5432"
 
 volumes:
   postgres_data:
