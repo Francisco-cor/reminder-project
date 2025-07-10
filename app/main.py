@@ -1,12 +1,15 @@
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timedelta, timezone # <-- CORRECCIÓN 1: Se importa timezone
 
-from . import crud, models, schemas
-from .database import engine, get_db
-from .services import twilio_service # Importarás los otros servicios aquí
+# Importaciones absolutas para compatibilidad con Docker y Uvicorn
+import crud
+import models
+import schemas
+from database import engine, get_db
+from services import twilio_service
 
-# Crea las tablas en la base de datos al iniciar (si no existen)
+# Esta línea asegura que las tablas se creen al iniciar la API.
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -16,39 +19,37 @@ app = FastAPI(
 
 @app.post("/tasks/", response_model=schemas.Task, status_code=201)
 def schedule_or_run_task(
-    task: schemas.TaskCreate, 
+    task: schemas.TaskCreate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
-    Recibe una tarea desde n8n.
-    - Si la tarea es para "ahora", la ejecuta inmediatamente en segundo plano.
-    - Si la tarea está programada para el futuro, la guarda en la BBDD.
+    Recibe una tarea desde n8n. Toda la lógica interna se maneja en UTC.
     """
-    # Si la tarea es para dentro de los próximos 65 segundos, la ejecutamos ya mismo
-    is_immediate = task.scheduled_at <= (datetime.utcnow() + timedelta(seconds=65))
+    # CORRECCIÓN 2: Usamos datetime.now(timezone.utc) para obtener la hora
+    # actual en un formato "aware" (consciente de la zona horaria).
+    now_utc = datetime.now(timezone.utc)
+    
+    # Comprobamos si la hora programada ya pasó o está en el próximo minuto.
+    # Ahora la comparación es entre dos fechas "aware", lo cual es correcto.
+    is_immediate = task.scheduled_at <= (now_utc + timedelta(seconds=65))
 
     if is_immediate:
-        # Lógica para ejecución inmediata en segundo plano
-        # Esto libera a n8n para que no tenga que esperar
         print(f"Tarea inmediata recibida: {task.task_type} a {task.target}")
-        
-        # Aquí puedes añadir la tarea a una cola de fondo
-        # background_tasks.add_task(execute_task, task)
-        # Por ahora, simplemente la guardamos y el worker la recogerá en el siguiente ciclo
-        
-        return crud.create_task(db=db, task=task)
-
     else:
-        # Lógica para guardar tarea programada
-        print(f"Tarea programada recibida para {task.scheduled_at}")
-        return crud.create_task(db=db, task=task)
+        print(f"Tarea programada recibida para {task.scheduled_at.isoformat()}")
+
+    # La función create_task se encarga de guardar la nueva tarea en la BBDD.
+    return crud.create_task(db=db, task=task)
 
 @app.get("/")
 def read_root():
+    """Endpoint raíz para verificar que el servicio está activo."""
     return {"status": "N8N Helper Service is running!"}
 
-# Función de ayuda (aún no usada en el endpoint, pero útil para el futuro)
+
+# La función de ayuda que tenías es útil para el futuro, la conservamos.
+# No se usa por ahora, pero podría ser activada con BackgroundTasks.
 def execute_task(task_data: schemas.TaskCreate):
     """Función que ejecuta la acción real de la tarea."""
     if task_data.task_type == schemas.TaskType.call:
