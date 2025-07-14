@@ -1,0 +1,259 @@
+{
+  "email_examples": {
+    "1_send_email_immediate": {
+      "endpoint": "POST /tasks/",
+      "description": "Enviar correo inmediato",
+      "json": {
+        "target": "destinatario@example.com",
+        "message": "<h2>Hola</h2><p>Este es un correo de prueba enviado desde el sistema.</p><p>Saludos,<br>El equipo</p>",
+        "task_type": "email",
+        "scheduled_at": "2024-01-14T12:00:00",
+        "extra_data": {
+          "subject": "Correo de prueba - Sistema de notificaciones"
+        }
+      }
+    },
+    "2_schedule_email_future": {
+      "endpoint": "POST /tasks/",
+      "description": "Programar correo para el futuro",
+      "json": {
+        "target": "cliente@empresa.com",
+        "message": "<h2>Recordatorio importante</h2><p>Le recordamos que su cita está programada para mañana.</p><ul><li>Fecha: 16 de enero</li><li>Hora: 10:00 AM</li><li>Lugar: Oficina principal</li></ul>",
+        "task_type": "email",
+        "scheduled_at": "2024-01-15T08:00:00",
+        "extra_data": {
+          "subject": "Recordatorio de cita - Mañana 10:00 AM"
+        }
+      }
+    }
+  },
+  
+  "google_calendar_examples": {
+    "1_create_google_event_immediate": {
+      "endpoint": "POST /calendar/events/",
+      "description": "Crear evento inmediato en Google Calendar con email",
+      "json": {
+        "summary": "Reunión de proyecto - Sprint Planning",
+        "description": "Planificación del próximo sprint del proyecto XYZ",
+        "start_time": "2024-01-16T09:00:00",
+        "end_time": "2024-01-16T10:30:00",
+        "attendees": ["equipo1@empresa.com", "equipo2@empresa.com"],
+        "location": "Sala de reuniones A",
+        "send_email_notification": true,
+        "reminder_minutes": [30, 10],
+        "additional_email_body": "<p><strong>Por favor preparar:</strong></p><ul><li>Lista de tareas pendientes</li><li>Estimaciones de tiempo</li><li>Bloqueos identificados</li></ul>"
+      }
+    },
+    "2_schedule_google_event_future": {
+      "endpoint": "POST /calendar/events/schedule/?scheduled_at=2024-01-20T08:00:00",
+      "description": "Programar creación de evento para el futuro",
+      "json": {
+        "summary": "Presentación mensual de resultados",
+        "description": "Revisión de métricas y KPIs del mes",
+        "start_time": "2024-02-01T11:00:00",
+        "end_time": "2024-02-01T12:00:00",
+        "attendees": ["gerencia@empresa.com", "finanzas@empresa.com"],
+        "location": "Auditorio",
+        "send_email_notification": true,
+        "additional_email_body": "<p>Se compartirá el dashboard 30 minutos antes de la reunión.</p>"
+      }
+    },
+    "3_create_google_event_via_task": {
+      "endpoint": "POST /tasks/",
+      "description": "Crear evento de Google Calendar como tarea programada",
+      "json": {
+        "target": "organizador@empresa.com",
+        "message": "Evento de calendario programado",
+        "task_type": "calendar_event",
+        "scheduled_at": "2024-01-15T07:00:00",
+        "extra_data": {
+          "summary": "Daily Standup",
+          "description": "Reunión diaria del equipo de desarrollo",
+          "start_time": "2024-01-15T09:00:00",
+          "end_time": "2024-01-15T09:15:00",
+          "attendees": ["dev1@empresa.com", "dev2@empresa.com", "dev3@empresa.com"],
+          "location": "Google Meet",
+          "send_email_notification": false,
+          "reminder_minutes": [5]
+        }
+      }
+    }
+  },
+  
+  "outlook_calendar_examples": {
+    "1_create_outlook_event_with_teams": {
+      "endpoint": "POST /outlook/calendar/events/",
+      "description": "Crear evento con reunión de Teams",
+      "json": {
+        "subject": "Kick-off proyecto ABC",
+        "body": "<h3>Agenda</h3><ol><li>Introducción y objetivos</li><li>Alcance del proyecto</li><li>Timeline y entregables</li><li>Asignación de responsabilidades</li><li>Q&A</li></ol>",
+        "start_time": "2024-01-17T14:00:00",
+        "end_time": "2024-01-17T15:30:00",
+        "attendees": ["cliente@empresa.com", "pm@empresa.com", "tech-lead@empresa.com"],
+        "location": "Microsoft Teams",
+        "is_online_meeting": true,
+        "send_email_notification": true,
+        "reminder_minutes_before_start": 45,
+        "categories": ["Proyectos", "Cliente ABC"],
+        "importance": "high",
+        "additional_email_content": "<p><strong>Documentos adjuntos:</strong></p><ul><li>Propuesta técnica</li><li>Cronograma tentativo</li><li>Presupuesto</li></ul><p>Los documentos se enviarán por separado 1 hora antes de la reunión.</p>"
+      }
+    },
+    "2_create_outlook_event_in_person": {
+      "endpoint": "POST /outlook/calendar/events/",
+      "description": "Crear evento presencial",
+      "json": {
+        "subject": "Comida con cliente potencial",
+        "body": "Reunión informal para discutir oportunidades de colaboración",
+        "start_time": "2024-01-18T13:00:00",
+        "end_time": "2024-01-18T14:30:00",
+        "attendees": ["prospecto@otraempresa.com"],
+        "location": "Restaurante El Mesón, Av. Principal 123",
+        "is_online_meeting": false,
+        "send_email_notification": false,
+        "reminder_minutes_before_start": 120,
+        "categories": ["Ventas", "Networking"],
+        "importance": "normal"
+      }
+    },
+    "3_schedule_outlook_event_future": {
+      "endpoint": "POST /outlook/calendar/events/schedule/?scheduled_at=2024-01-25T06:00:00",
+      "description": "Programar evento de Outlook para creación futura",
+      "json": {
+        "subject": "Capacitación: Nuevas herramientas de desarrollo",
+        "body": "<h2>Temas a cubrir:</h2><ul><li>Introducción a las nuevas herramientas</li><li>Mejores prácticas</li><li>Hands-on session</li><li>Recursos adicionales</li></ul>",
+        "start_time": "2024-02-05T10:00:00",
+        "end_time": "2024-02-05T12:00:00",
+        "attendees": ["equipo.desarrollo@empresa.com", "equipo.qa@empresa.com"],
+        "location": "Sala de capacitación - Piso 3",
+        "is_online_meeting": true,
+        "send_email_notification": true,
+        "reminder_minutes_before_start": 60,
+        "categories": ["Capacitación", "Desarrollo"],
+        "importance": "normal",
+        "additional_email_content": "<p><strong>Requisitos:</strong></p><ul><li>Laptop con permisos de administrador</li><li>Cuenta activa en el portal de desarrollo</li></ul>"
+      }
+    },
+    "4_create_outlook_event_via_task": {
+      "endpoint": "POST /tasks/",
+      "description": "Crear evento de Outlook como tarea programada",
+      "json": {
+        "target": "coordinador@empresa.com",
+        "message": "Reunión semanal de seguimiento",
+        "task_type": "outlook_event",
+        "scheduled_at": "2024-01-19T07:00:00",
+        "extra_data": {
+          "subject": "Seguimiento semanal - Equipo de ventas",
+          "body": "<h3>Puntos a revisar:</h3><ul><li>Pipeline de ventas</li><li>Casos cerrados</li><li>Forecast del mes</li><li>Challenges y bloqueos</li></ul>",
+          "start_time": "2024-01-19T11:00:00",
+          "end_time": "2024-01-19T12:00:00",
+          "attendees": ["ventas1@empresa.com", "ventas2@empresa.com", "gerente.ventas@empresa.com"],
+          "location": "Sala de ventas",
+          "is_online_meeting": false,
+          "send_email_notification": true,
+          "reminder_minutes_before_start": 30,
+          "categories": ["Ventas", "Semanal"],
+          "importance": "normal",
+          "additional_email_content": "<p>Por favor actualizar el CRM antes de la reunión.</p>"
+        }
+      }
+    },
+    "5_check_availability": {
+      "endpoint": "POST /outlook/calendar/schedule/free-busy/",
+      "description": "Verificar disponibilidad de múltiples personas",
+      "json": {
+        "emails": ["persona1@empresa.com", "persona2@empresa.com", "persona3@empresa.com"],
+        "start_time": "2024-01-22T08:00:00",
+        "end_time": "2024-01-22T18:00:00",
+        "interval_minutes": 30
+      }
+    }
+  },
+  
+  "other_task_examples": {
+    "1_send_sms": {
+      "endpoint": "POST /tasks/",
+      "description": "Enviar SMS",
+      "json": {
+        "target": "+521234567890",
+        "message": "Recordatorio: Su cita es mañana a las 10:00 AM. Para confirmar responda SI.",
+        "task_type": "sms",
+        "scheduled_at": "2024-01-15T08:00:00"
+      }
+    },
+    "2_make_call": {
+      "endpoint": "POST /tasks/",
+      "description": "Realizar llamada",
+      "json": {
+        "target": "+521234567890",
+        "message": "Este es un recordatorio automático. Su pago vence mañana. Para más información, comuníquese al 01800-123-4567.",
+        "task_type": "call",
+        "scheduled_at": "2024-01-15T10:00:00"
+      }
+    },
+    "3_send_whatsapp": {
+      "endpoint": "POST /tasks/",
+      "description": "Enviar WhatsApp",
+      "json": {
+        "target": "+521234567890",
+        "message": "¡Hola! 👋 Le recordamos que su pedido está listo para recoger. Horario de atención: 9 AM - 6 PM.",
+        "task_type": "whatsapp",
+        "scheduled_at": "2024-01-15T09:00:00"
+      }
+    }
+  },
+  
+  "query_examples": {
+    "1_list_google_events": {
+      "endpoint": "GET /calendar/events/?max_results=10",
+      "description": "Listar próximos eventos de Google Calendar"
+    },
+    "2_search_google_events": {
+      "endpoint": "GET /calendar/events/?query=reunion&max_results=5",
+      "description": "Buscar eventos por texto en Google Calendar"
+    },
+    "3_list_outlook_events": {
+      "endpoint": "GET /outlook/calendar/events/?top=10",
+      "description": "Listar eventos de Outlook"
+    },
+    "4_search_outlook_events": {
+      "endpoint": "GET /outlook/calendar/events/?search=proyecto&top=5",
+      "description": "Buscar eventos en Outlook"
+    },
+    "5_outlook_events_date_range": {
+      "endpoint": "GET /outlook/calendar/events/?start_datetime=2024-01-15T00:00:00&end_datetime=2024-01-31T23:59:59",
+      "description": "Eventos de Outlook en rango de fechas"
+    }
+  },
+  
+  "update_delete_examples": {
+    "1_update_google_event": {
+      "endpoint": "PUT /calendar/events/{event_id}",
+      "description": "Actualizar evento de Google Calendar",
+      "json": {
+        "summary": "Reunión POSPUESTA - Sprint Planning",
+        "start_time": "2024-01-16T14:00:00",
+        "end_time": "2024-01-16T15:30:00",
+        "location": "Sala B",
+        "send_notifications": true
+      }
+    },
+    "2_delete_google_event": {
+      "endpoint": "DELETE /calendar/events/{event_id}?send_notifications=true",
+      "description": "Eliminar evento de Google Calendar"
+    },
+    "3_update_outlook_event": {
+      "endpoint": "PUT /outlook/calendar/events/{event_id}",
+      "description": "Actualizar evento de Outlook",
+      "json": {
+        "subject": "Kick-off proyecto ABC - CAMBIO DE HORA",
+        "start_time": "2024-01-17T16:00:00",
+        "end_time": "2024-01-17T17:30:00"
+      }
+    },
+    "4_delete_outlook_event": {
+      "endpoint": "DELETE /outlook/calendar/events/{event_id}?send_cancellation=true",
+      "description": "Cancelar evento de Outlook con notificación"
+    }
+  }
+}
