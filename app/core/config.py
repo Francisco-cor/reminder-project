@@ -13,6 +13,14 @@ class Settings(BaseSettings):
     OUTLOOK_CLIENT_SECRET: str
     OUTLOOK_SENDER_EMAIL: str # El email desde el que se enviarán los correos
 
+    # Configuración de Evolution API
+    EVOLUTION_API_URL: str
+    EVOLUTION_API_INSTANCE: str
+    EVOLUTION_API_KEY: str
+
+    # Configuración de Google
+    GOOGLE_CREDENTIALS_JSON: str  # Ruta al archivo JSON de credenciales de Google
+
     class Config:
         env_file = ".env"
 

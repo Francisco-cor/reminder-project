@@ -9,14 +9,14 @@ services:
     # El comando correcto para Uvicorn.
     # Busca 'main.py' en el WORKDIR (/app) y el objeto 'app' dentro de él.
     # Quitamos --reload para mayor estabilidad en producción o a través de túneles.
-    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    command: uvicorn main:app --host 0.0.0.0 --port 8008
     volumes:
       # Monta la carpeta local 'app' en el directorio de trabajo '/app' del contenedor.
       # Esto permite que los cambios en tu código se reflejen sin reconstruir la imagen.
       - ./app:/app
     ports:
-      # Expone el puerto 8000 del contenedor al puerto 8000 de tu máquina.
-      - "8000:8000"
+      # Expone el puerto 8008 del contenedor al puerto 8008 de tu máquina.
+      - "8008:8008"
     env_file:
       # Carga las variables de entorno desde el archivo .env
       - .env

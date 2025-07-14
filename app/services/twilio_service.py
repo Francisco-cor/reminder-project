@@ -1,5 +1,6 @@
 from twilio.rest import Client
 from core.config import settings # (En tu código ya está importado así, es correcto)
+import requests
 
 client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
 
@@ -36,19 +37,32 @@ def make_call(to_number: str, message: str):
         raise
 
 def send_whatsapp(to_number: str, message: str):
-    """Envía un mensaje de WhatsApp."""
+    """Envía un mensaje a través de Evolution API."""
     try:
-        # CAMBIO: WhatsApp también usa el número con capacidad de mensajería
-        from_whatsapp_number = f'whatsapp:{settings.TWILIO_SMS_NUMBER}'
-        to_whatsapp_number = f'whatsapp:{to_number}'
-        
-        message = client.messages.create(
-            body=message,
-            from_=from_whatsapp_number,
-            to=to_whatsapp_number
-        )
-        print(f"WhatsApp enviado a {to_number} desde {settings.TWILIO_SMS_NUMBER}. SID: {message.sid}", flush=True)
-        return message.sid
+        # Configura el endpoint y los headers aquí
+        endpoint = f"{settings.EVOLUTION_API_URL}/message/sendText/{settings.EVOLUTION_API_INSTANCE}"
+        headers = {
+            "Content-Type": "application/json",
+            "apikey": settings.EVOLUTION_API_KEY,
+        }
+
+        message_ready = message.replace("+", "") 
+        print(f"Enviando mensaje a {to_number} vía Evolution API: {message_ready}", flush=True)
+
+        # Configura el payload
+        body = {
+            "number": to_number,
+            "text": f"{message_ready}.s.whatsapp.net",
+        }
+
+        # Realiza la petición POST
+        response = requests.post(endpoint, json=body, headers=headers)
+        response.raise_for_status()
+
+        print(f"Mensaje enviado a {to_number} vía Evolution API. Response: {response.json()}", flush=True)
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error al enviar mensaje a {to_number} vía Evolution API: {e}", flush=True)
+        raise
     except Exception as e:
         print(f"Error al enviar WhatsApp a {to_number}: {e}", flush=True)
-        raise

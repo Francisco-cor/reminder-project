@@ -8,6 +8,7 @@ import models
 import schemas
 from database import engine, get_db
 from services import twilio_service
+from routers import calendar_router, outlook_calendar_router
 
 # Esta línea asegura que las tablas se creen al iniciar la API.
 models.Base.metadata.create_all(bind=engine)
@@ -16,6 +17,10 @@ app = FastAPI(
     title="N8N Helper Service",
     description="Un microservicio para manejar comunicaciones y recordatorios."
 )
+
+# Incluir los routers
+app.include_router(calendar_router.router)
+app.include_router(outlook_calendar_router.router)
 
 @app.post("/tasks/", response_model=schemas.Task, status_code=201)
 def schedule_or_run_task(
