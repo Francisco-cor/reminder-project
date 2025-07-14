@@ -47,71 +47,96 @@ def process_pending_tasks():
                         body=task.message
                     )
                 elif task.task_type == TaskType.calendar_event:
-                    # Extraer datos del evento desde extra_data
                     event_data = task.extra_data or {}
-                    
-                    # Si send_email_notification es True, usar la función combinada
+                    start_time = datetime.fromisoformat(event_data.get('start_time'))
+                    end_time = datetime.fromisoformat(event_data.get('end_time'))
+                    timezone = event_data.get('timezone', 'UTC')
+
+                    result = google_calendar_service.create_event(
+                        summary=event_data.get('summary', 'Evento sin título'),
+                        description=event_data.get('description', task.message),
+                        start_time=start_time,
+                        end_time=end_time,
+                        attendees=event_data.get('attendees', [task.target]),
+                        location=event_data.get('location'),
+                        reminder_minutes=event_data.get('reminder_minutes', [30, 10]),
+                        timezone=timezone
+                    )
+
                     if event_data.get('send_email_notification', False):
-                        google_calendar_service.create_event_with_email_notification(
-                            summary=event_data.get('summary', 'Evento sin título'),
-                            description=event_data.get('description', task.message),
-                            start_time=event_data.get('start_time', task.scheduled_at),
-                            end_time=event_data.get('end_time', task.scheduled_at),
-                            attendees=event_data.get('attendees', [task.target]),
-                            location=event_data.get('location'),
-                            additional_email_body=event_data.get('additional_email_body')
-                        )
-                    else:
-                        # Crear solo el evento de calendario
-                        google_calendar_service.create_event(
-                            summary=event_data.get('summary', 'Evento sin título'),
-                            description=event_data.get('description', task.message),
-                            start_time=event_data.get('start_time', task.scheduled_at),
-                            end_time=event_data.get('end_time', task.scheduled_at),
-                            attendees=event_data.get('attendees', [task.target]),
-                            location=event_data.get('location'),
-                            reminder_minutes=event_data.get('reminder_minutes', [30, 10])
-                        )
+                        email_body = f"""
+                        <h2>Nuevo evento agendado: {event_data.get('summary', 'Evento sin título')}</h2>
+                        <p><strong>Fecha y hora:</strong> {start_time.strftime('%d/%m/%Y %H:%M')} - {end_time.strftime('%H:%M')} ({timezone})</p>
+                        <p><strong>Descripción:</strong> {event_data.get('description', task.message)}</p>
+                        """
+                        if event_data.get('location'):
+                            email_body += f"<p><strong>Ubicación:</strong> {event_data.get('location')}</p>"
+                        if event_data.get('additional_email_body'):
+                            email_body += f"<br/>{event_data.get('additional_email_body')}"
+                        email_body += f'''
+                        <br/>
+                        <p>Se ha agregado este evento a tu calendario de Google. Recibirás recordatorios 30 y 10 minutos antes del evento.</p>
+                        <p><a href="{result.get('htmlLink')}">Ver evento en Google Calendar</a></p>
+                        '''
+                        for attendee_email in event_data.get('attendees', [task.target]):
+                            try:
+                                email_service.send_email(
+                                    to_email=attendee_email,
+                                    subject=f"Invitación: {event_data.get('summary', 'Evento sin título')}",
+                                    body=email_body
+                                )
+                            except Exception as e:
+                                print(f"Error al enviar correo a {attendee_email}: {e}")
+
                 elif task.task_type == TaskType.outlook_event:
-                    # Extraer datos del evento de Outlook desde extra_data
                     event_data = task.extra_data or {}
-                    
-                    # Convertir strings ISO a datetime si es necesario
-                    start_time = event_data.get('start_time', task.scheduled_at)
-                    end_time = event_data.get('end_time', task.scheduled_at)
-                    
-                    if isinstance(start_time, str):
-                        start_time = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
-                    if isinstance(end_time, str):
-                        end_time = datetime.fromisoformat(end_time.replace('Z', '+00:00'))
-                    
-                    # Si send_email_notification es True, usar la función combinada
+                    start_time = datetime.fromisoformat(event_data.get('start_time'))
+                    end_time = datetime.fromisoformat(event_data.get('end_time'))
+                    timezone = event_data.get('timezone', 'UTC')
+
+                    result = outlook_calendar_service.create_outlook_event(
+                        subject=event_data.get('subject', 'Evento sin título'),
+                        body=event_data.get('body', task.message),
+                        start_time=start_time,
+                        end_time=end_time,
+                        attendees=event_data.get('attendees', [task.target]),
+                        location=event_data.get('location'),
+                        is_online_meeting=event_data.get('is_online_meeting', False),
+                        reminder_minutes_before_start=event_data.get('reminder_minutes_before_start', 15),
+                        categories=event_data.get('categories'),
+                        importance=event_data.get('importance', 'normal'),
+                        timezone=timezone
+                    )
+
                     if event_data.get('send_email_notification', False):
-                        outlook_calendar_service.create_outlook_event_with_email(
-                            subject=event_data.get('subject', 'Evento sin título'),
-                            body=event_data.get('body', task.message),
-                            start_time=start_time,
-                            end_time=end_time,
-                            attendees=event_data.get('attendees', [task.target]),
-                            location=event_data.get('location'),
-                            is_online_meeting=event_data.get('is_online_meeting', False),
-                            additional_email_content=event_data.get('additional_email_content'),
-                            categories=event_data.get('categories')
-                        )
-                    else:
-                        # Crear solo el evento de Outlook
-                        outlook_calendar_service.create_outlook_event(
-                            subject=event_data.get('subject', 'Evento sin título'),
-                            body=event_data.get('body', task.message),
-                            start_time=start_time,
-                            end_time=end_time,
-                            attendees=event_data.get('attendees', [task.target]),
-                            location=event_data.get('location'),
-                            is_online_meeting=event_data.get('is_online_meeting', False),
-                            reminder_minutes_before_start=event_data.get('reminder_minutes_before_start', 15),
-                            categories=event_data.get('categories'),
-                            importance=event_data.get('importance', 'normal')
-                        )
+                        email_body = f"""
+                        <h2>Nuevo evento agendado: {event_data.get('subject', 'Evento sin título')}</h2>
+                        <p><strong>Fecha y hora:</strong> {start_time.strftime('%d/%m/%Y %H:%M')} - {end_time.strftime('%H:%M')} ({timezone})</p>
+                        <p><strong>Descripción:</strong></p>
+                        <div style="margin-left: 20px;">{event_data.get('body', task.message)}</div>
+                        """
+                        if event_data.get('location'):
+                            email_body += f"<p><strong>Ubicación:</strong> {event_data.get('location')}</p>"
+                        if event_data.get('is_online_meeting') and result.get('onlineMeeting'):
+                            join_url = result['onlineMeeting'].get('joinUrl', '')
+                            if join_url:
+                                email_body += f'<p><strong>Unirse a la reunión:</strong> <a href="{join_url}">Click aquí para unirse a Teams</a></p>'
+                        if event_data.get('additional_email_content'):
+                            email_body += f"<br/><h3>Información adicional:</h3>{event_data.get('additional_email_content')}"
+                        email_body += f"""
+                        <br/>
+                        <p>Se ha agregado este evento a tu calendario de Outlook. Recibirás un recordatorio {event_data.get('reminder_minutes_before_start', 15)} minutos antes del evento.</p>
+                        <p><a href="{result.get('webLink')}">Ver evento en Outlook</a></p>
+                        """
+                        for attendee_email in event_data.get('attendees', [task.target]):
+                            try:
+                                email_service.send_email(
+                                    to_email=attendee_email,
+                                    subject=f"Confirmación: {event_data.get('subject', 'Evento sin título')}",
+                                    body=email_body
+                                )
+                            except Exception as e:
+                                print(f"Error al enviar correo adicional a {attendee_email}: {e}")
 
                 print(f"Worker: Tarea ID {task.id} completada exitosamente.", flush=True)
                 update_task_status(db, task.id, TaskStatus.done)

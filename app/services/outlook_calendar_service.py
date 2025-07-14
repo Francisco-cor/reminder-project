@@ -19,7 +19,8 @@ def create_outlook_event(
     reminder_minutes_before_start: int = 15,
     categories: Optional[List[str]] = None,
     importance: str = "normal",  # low, normal, high
-    send_response: bool = True
+    send_response: bool = True,
+    timezone: str = "UTC"
 ) -> Dict[str, Any]:
     """
     Crea un evento en el calendario de Outlook usando Microsoft Graph API.
@@ -36,6 +37,7 @@ def create_outlook_event(
         categories: Categorías del evento
         importance: Importancia del evento
         send_response: Si enviar invitaciones a los asistentes
+        timezone: Zona horaria del evento
     
     Returns:
         Dict con la información del evento creado
@@ -59,11 +61,11 @@ def create_outlook_event(
         },
         "start": {
             "dateTime": start_time.strftime("%Y-%m-%dT%H:%M:%S"),
-            "timeZone": "America/Mexico_City"
+            "timeZone": timezone
         },
         "end": {
             "dateTime": end_time.strftime("%Y-%m-%dT%H:%M:%S"),
-            "timeZone": "America/Mexico_City"
+            "timeZone": timezone
         },
         "reminderMinutesBeforeStart": reminder_minutes_before_start,
         "isReminderOn": True,
@@ -173,12 +175,12 @@ def update_outlook_event(
     if 'start_time' in kwargs:
         update_payload['start'] = {
             "dateTime": kwargs['start_time'].strftime("%Y-%m-%dT%H:%M:%S"),
-            "timeZone": "America/Mexico_City"
+            "timeZone": kwargs.get("timezone", "UTC")
         }
     if 'end_time' in kwargs:
         update_payload['end'] = {
             "dateTime": kwargs['end_time'].strftime("%Y-%m-%dT%H:%M:%S"),
-            "timeZone": "America/Mexico_City"
+            "timeZone": kwargs.get("timezone", "UTC")
         }
     if 'location' in kwargs:
         update_payload['location'] = {
@@ -351,99 +353,14 @@ def list_outlook_events(
         print(f"Respuesta de error: {e.response.text}")
         raise
 
-def create_outlook_event_with_email(
-    subject: str,
-    body: str,
-    start_time: datetime,
-    end_time: datetime,
-    attendees: List[str],
-    location: Optional[str] = None,
-    is_online_meeting: bool = False,
-    additional_email_content: Optional[str] = None,
-    categories: Optional[List[str]] = None
-) -> Dict[str, Any]:
-    """
-    Crea un evento en Outlook y envía un correo personalizado adicional a los asistentes.
-    
-    Args:
-        subject: Asunto del evento
-        body: Descripción del evento
-        start_time: Fecha y hora de inicio
-        end_time: Fecha y hora de fin
-        attendees: Lista de emails de los asistentes
-        location: Ubicación del evento
-        is_online_meeting: Si crear una reunión de Teams
-        additional_email_content: Contenido adicional para el correo
-        categories: Categorías del evento
-    
-    Returns:
-        Dict con la información del evento creado
-    """
-    try:
-        # Crear el evento en Outlook
-        event = create_outlook_event(
-            subject=subject,
-            body=body,
-            start_time=start_time,
-            end_time=end_time,
-            attendees=attendees,
-            location=location,
-            is_online_meeting=is_online_meeting,
-            reminder_minutes_before_start=30,
-            categories=categories,
-            send_response=True
-        )
-        
-        # Preparar el cuerpo del correo adicional
-        email_body = f"""
-        <h2>Nuevo evento agendado: {subject}</h2>
-        
-        <p><strong>Fecha y hora:</strong> {start_time.strftime('%d/%m/%Y %H:%M')} - {end_time.strftime('%H:%M')}</p>
-        <p><strong>Descripción:</strong></p>
-        <div style="margin-left: 20px;">{body}</div>
-        """
-        
-        if location:
-            email_body += f"<p><strong>Ubicación:</strong> {location}</p>"
-        
-        if is_online_meeting and event.get('onlineMeeting'):
-            join_url = event['onlineMeeting'].get('joinUrl', '')
-            if join_url:
-                email_body += f'<p><strong>Unirse a la reunión:</strong> <a href="{join_url}">Click aquí para unirse a Teams</a></p>'
-        
-        if additional_email_content:
-            email_body += f"<br/><h3>Información adicional:</h3>{additional_email_content}"
-        
-        email_body += f"""
-        <br/>
-        <p>Se ha agregado este evento a tu calendario de Outlook. Recibirás un recordatorio 30 minutos antes del evento.</p>
-        <p><a href="{event.get('webLink')}">Ver evento en Outlook</a></p>
-        """
-        
-        # Enviar correo personalizado a cada asistente
-        for attendee_email in attendees:
-            try:
-                send_email(
-                    to_email=attendee_email,
-                    subject=f"Confirmación: {subject}",
-                    body=email_body
-                )
-                print(f"Correo adicional enviado a {attendee_email}")
-            except Exception as e:
-                print(f"Error al enviar correo adicional a {attendee_email}: {e}")
-                # Continuar con los demás asistentes aunque falle uno
-        
-        return event
-        
-    except Exception as e:
-        print(f"Error al crear evento con notificación: {e}")
-        raise
+
 
 def get_free_busy_schedule(
     emails: List[str],
     start_time: datetime,
     end_time: datetime,
-    interval_minutes: int = 30
+    interval_minutes: int = 30,
+    timezone: str = "UTC"
 ) -> Dict[str, Any]:
     """
     Obtiene la disponibilidad (libre/ocupado) de múltiples usuarios.
@@ -453,6 +370,7 @@ def get_free_busy_schedule(
         start_time: Inicio del período a verificar
         end_time: Fin del período a verificar
         interval_minutes: Duración de los intervalos en minutos
+        timezone: Zona horaria para la consulta
     
     Returns:
         Dict con la información de disponibilidad
@@ -470,11 +388,11 @@ def get_free_busy_schedule(
         "schedules": emails,
         "startTime": {
             "dateTime": start_time.strftime("%Y-%m-%dT%H:%M:%S"),
-            "timeZone": "America/Mexico_City"
+            "timeZone": timezone
         },
         "endTime": {
             "dateTime": end_time.strftime("%Y-%m-%dT%H:%M:%S"),
-            "timeZone": "America/Mexico_City"
+            "timeZone": timezone
         },
         "availabilityViewInterval": interval_minutes
     }

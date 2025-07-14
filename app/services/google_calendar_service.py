@@ -37,7 +37,8 @@ def create_event(
     location: Optional[str] = None,
     calendar_id: str = 'primary',
     send_notifications: bool = True,
-    reminder_minutes: Optional[List[int]] = None
+    reminder_minutes: Optional[List[int]] = None,
+    timezone: str = "UTC"
 ) -> Dict[str, Any]:
     """
     Crea un evento en Google Calendar.
@@ -52,6 +53,7 @@ def create_event(
         calendar_id: ID del calendario (por defecto 'primary')
         send_notifications: Si enviar notificaciones a los asistentes
         reminder_minutes: Lista de minutos antes del evento para recordatorios
+        timezone: Zona horaria del evento
     
     Returns:
         Dict con la información del evento creado
@@ -65,11 +67,11 @@ def create_event(
             'description': description,
             'start': {
                 'dateTime': start_time.isoformat(),
-                'timeZone': 'America/Mexico_City',  # Ajusta según tu zona horaria
+                'timeZone': timezone,
             },
             'end': {
                 'dateTime': end_time.isoformat(),
-                'timeZone': 'America/Mexico_City',
+                'timeZone': timezone,
             },
         }
         
@@ -140,15 +142,17 @@ def update_event(
             event['description'] = kwargs['description']
         if 'location' in kwargs:
             event['location'] = kwargs['location']
+        
+        timezone = kwargs.get("timezone", "UTC")
         if 'start_time' in kwargs:
             event['start'] = {
                 'dateTime': kwargs['start_time'].isoformat(),
-                'timeZone': 'America/Mexico_City',
+                'timeZone': timezone,
             }
         if 'end_time' in kwargs:
             event['end'] = {
                 'dateTime': kwargs['end_time'].isoformat(),
-                'timeZone': 'America/Mexico_City',
+                'timeZone': timezone,
             }
         if 'attendees' in kwargs:
             event['attendees'] = [{'email': email} for email in kwargs['attendees']]
@@ -288,79 +292,3 @@ def list_events(
         print(f"Error al listar eventos: {e}")
         raise
 
-def create_event_with_email_notification(
-    summary: str,
-    description: str,
-    start_time: datetime,
-    end_time: datetime,
-    attendees: List[str],
-    location: Optional[str] = None,
-    additional_email_body: Optional[str] = None
-) -> Dict[str, Any]:
-    """
-    Crea un evento en Google Calendar y envía un correo personalizado a los asistentes.
-    
-    Args:
-        summary: Título del evento
-        description: Descripción del evento
-        start_time: Fecha y hora de inicio
-        end_time: Fecha y hora de fin
-        attendees: Lista de emails de los asistentes
-        location: Ubicación del evento
-        additional_email_body: Contenido adicional para el correo
-    
-    Returns:
-        Dict con la información del evento creado
-    """
-    from .email_service import send_email
-    
-    try:
-        # Crear el evento en Google Calendar
-        event = create_event(
-            summary=summary,
-            description=description,
-            start_time=start_time,
-            end_time=end_time,
-            attendees=attendees,
-            location=location,
-            send_notifications=True,
-            reminder_minutes=[30, 10]  # Recordatorios a 30 y 10 minutos antes
-        )
-        
-        # Preparar el cuerpo del correo
-        email_body = f"""
-        <h2>Nuevo evento agendado: {summary}</h2>
-        
-        <p><strong>Fecha y hora:</strong> {start_time.strftime('%d/%m/%Y %H:%M')} - {end_time.strftime('%H:%M')}</p>
-        <p><strong>Descripción:</strong> {description}</p>
-        """
-        
-        if location:
-            email_body += f"<p><strong>Ubicación:</strong> {location}</p>"
-        
-        if additional_email_body:
-            email_body += f"<br/>{additional_email_body}"
-        
-        email_body += f"""
-        <br/>
-        <p>Se ha agregado este evento a tu calendario de Google. Recibirás recordatorios 30 y 10 minutos antes del evento.</p>
-        <p><a href="{event.get('htmlLink')}">Ver evento en Google Calendar</a></p>
-        """
-        
-        # Enviar correo a cada asistente
-        for attendee_email in attendees:
-            try:
-                send_email(
-                    to_email=attendee_email,
-                    subject=f"Invitación: {summary}",
-                    body=email_body
-                )
-            except Exception as e:
-                print(f"Error al enviar correo a {attendee_email}: {e}")
-                # Continuar con los demás asistentes aunque falle uno
-        
-        return event
-        
-    except Exception as e:
-        print(f"Error al crear evento con notificación: {e}")
-        raise

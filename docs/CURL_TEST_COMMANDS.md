@@ -1,255 +1,211 @@
-# Comandos CURL para probar la API
+# Comandos CURL para Probar la API (Actualizado)
 
-## 🔧 Base URL
-```
-BASE_URL=http://localhost:8000
-```
+Este archivo contiene ejemplos de comandos `curl` para probar todos los endpoints de la API, incluyendo los cambios recientes de zona horaria y la refactorización del envío de correos.
 
-## 📧 Ejemplos de Email (Microsoft Outlook)
-
-### 1. Enviar email inmediato
+## 🔧 Configuración Base
 ```bash
-curl -X POST "$BASE_URL/tasks/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "target": "emilianoa.aguilar17@gmail.com",
-    "message": "<h2>Hola</h2><p>Este es un correo de prueba enviado desde el sistema.</p><p>Saludos,<br>El equipo</p>",
-    "task_type": "email",
-    "scheduled_at": "2025-07-14T12:38:00",
-    "extra_data": {
-      "subject": "Correo de prueba - Sistema de notificaciones"
-    }
-  }'
+# Define la URL base de tu API
+BASE_URL="http://localhost:8000"
+
+# Define un email de prueba para los asistentes
+TEST_EMAIL="tu_email_de_prueba@example.com"
+
+# Define un ID de evento de Google y Outlook para pruebas (reemplázalos con IDs reales después de crear un evento)
+GOOGLE_EVENT_ID="google_event_id_a_reemplazar"
+OUTLOOK_EVENT_ID="outlook_event_id_a_reemplazar"
 ```
 
-### 2. Programar email para el futuro
-```bash
-curl -X POST "$BASE_URL/tasks/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "target": "cliente@empresa.com",
-    "message": "<h2>Recordatorio importante</h2><p>Le recordamos que su cita está programada para mañana.</p><ul><li>Fecha: 16 de enero</li><li>Hora: 10:00 AM</li><li>Lugar: Oficina principal</li></ul>",
-    "task_type": "email",
-    "scheduled_at": "2024-01-15T08:00:00",
-    "extra_data": {
-      "subject": "Recordatorio de cita - Mañana 10:00 AM"
-    }
-  }'
-```
+---
 
-## 📅 Ejemplos de Google Calendar
+## 📅 Google Calendar
 
-### 1. Crear evento inmediato con notificación
+### 1. Crear Evento Inmediato
+Crea un evento en Google Calendar y envía una notificación por correo electrónico.
 ```bash
 curl -X POST "$BASE_URL/calendar/events/" \
   -H "Content-Type: application/json" \
   -d '{
-    "summary": "Reunión de proyecto - Sprint Planning",
-    "description": "Planificación del próximo sprint del proyecto XYZ",
-    "start_time": "2024-01-16T09:00:00",
-    "end_time": "2024-01-16T10:30:00",
-    "attendees": ["equipo1@empresa.com", "equipo2@empresa.com"],
-    "location": "Sala de reuniones A",
+    "summary": "Reunión de Sincronización (Google)",
+    "description": "Revisión semanal de avances y bloqueos.",
+    "start_time": "2025-08-15T10:00:00",
+    "end_time": "2025-08-15T11:00:00",
+    "attendees": ["'"$TEST_EMAIL"'"],
+    "location": "Oficina Principal, Sala 101",
+    "timezone": "America/Mexico_City",
     "send_email_notification": true,
     "reminder_minutes": [30, 10],
-    "additional_email_body": "<p><strong>Por favor preparar:</strong></p><ul><li>Lista de tareas pendientes</li><li>Estimaciones de tiempo</li><li>Bloqueos identificados</li></ul>"
+    "additional_email_body": "<p>Por favor, tener listos los reportes de la semana.</p>"
   }'
 ```
 
-### 2. Programar evento de Google Calendar para el futuro
+### 2. Programar Creación de Evento
+Agenda una tarea para que un evento de Google Calendar se cree en el futuro.
 ```bash
-curl -X POST "$BASE_URL/calendar/events/schedule/?scheduled_at=2024-01-20T08:00:00" \
+curl -X POST "$BASE_URL/calendar/events/schedule/?scheduled_at=2025-08-14T18:00:00Z" \
   -H "Content-Type: application/json" \
   -d '{
-    "summary": "Presentación mensual de resultados",
-    "description": "Revisión de métricas y KPIs del mes",
-    "start_time": "2024-02-01T11:00:00",
-    "end_time": "2024-02-01T12:00:00",
-    "attendees": ["gerencia@empresa.com", "finanzas@empresa.com"],
-    "location": "Auditorio",
-    "send_email_notification": true,
-    "additional_email_body": "<p>Se compartirá el dashboard 30 minutos antes de la reunión.</p>"
+    "summary": "Lanzamiento de Producto (Google)",
+    "description": "Evento de lanzamiento para el nuevo producto.",
+    "start_time": "2025-09-01T12:00:00",
+    "end_time": "2025-09-01T13:00:00",
+    "attendees": ["'"$TEST_EMAIL"'", "marketing@example.com"],
+    "location": "Centro de Convenciones",
+    "timezone": "America/New_York",
+    "send_email_notification": true
+  }'
+```3
+
+### 3. Obtener un Evento Específico
+```bash
+curl -X GET "$BASE_URL/calendar/events/'"$GOOGLE_EVENT_ID"'"
+```
+
+### 4. Actualizar un Evento
+Cambia la hora y la zona horaria de un evento existente.
+```bash
+curl -X PUT "$BASE_URL/calendar/events/'"$GOOGLE_EVENT_ID"'" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "summary": "Reunión de Sincronización (Google) - Reprogramada",
+    "start_time": "2025-08-15T14:30:00",
+    "end_time": "2025-08-15T15:30:00",
+    "timezone": "America/Bogota"
   }'
 ```
 
-### 3. Listar eventos de Google Calendar
+### 5. Listar Eventos
 ```bash
-curl -X GET "$BASE_URL/calendar/events/?max_results=10"
+curl -X GET "$BASE_URL/calendar/events/?max_results=5"
 ```
 
-### 4. Buscar eventos en Google Calendar
+### 6. Eliminar un Evento
 ```bash
-curl -X GET "$BASE_URL/calendar/events/?query=reunion&max_results=5"
+curl -X DELETE "$BASE_URL/calendar/events/'"$GOOGLE_EVENT_ID"'"
 ```
 
-## 📘 Ejemplos de Outlook Calendar
+---
 
-### 1. Crear evento con Teams meeting
+## 📘 Outlook Calendar
+
+### 1. Crear Evento Inmediato con Reunión de Teams
+Crea un evento en Outlook con un enlace de Teams y envía un correo de notificación.
 ```bash
 curl -X POST "$BASE_URL/outlook/calendar/events/" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "Kick-off proyecto ABC",
-    "body": "<h3>Agenda</h3><ol><li>Introducción y objetivos</li><li>Alcance del proyecto</li><li>Timeline y entregables</li><li>Asignación de responsabilidades</li><li>Q&A</li></ol>",
-    "start_time": "2024-01-17T14:00:00",
-    "end_time": "2024-01-17T15:30:00",
-    "attendees": ["cliente@empresa.com", "pm@empresa.com", "tech-lead@empresa.com"],
+    "subject": "Discusión Técnica (Outlook)",
+    "body": "<p>Análisis de la nueva arquitectura de microservicios.</p>",
+    "start_time": "2025-08-16T15:00:00",
+    "end_time": "2025-08-16T16:30:00",
+    "attendees": ["'"$TEST_EMAIL"'", "dev-team@example.com"],
     "location": "Microsoft Teams",
+    "timezone": "Europe/Madrid",
     "is_online_meeting": true,
     "send_email_notification": true,
-    "reminder_minutes_before_start": 45,
-    "categories": ["Proyectos", "Cliente ABC"],
-    "importance": "high",
-    "additional_email_content": "<p><strong>Documentos adjuntos:</strong></p><ul><li>Propuesta técnica</li><li>Cronograma tentativo</li><li>Presupuesto</li></ul><p>Los documentos se enviarán por separado 1 hora antes de la reunión.</p>"
+    "reminder_minutes_before_start": 60,
+    "categories": ["Técnico", "Arquitectura"],
+    "importance": "high"
   }'
 ```
 
-### 2. Crear evento presencial
+### 2. Programar Creación de Evento
 ```bash
-curl -X POST "$BASE_URL/outlook/calendar/events/" \
+curl -X POST "$BASE_URL/outlook/calendar/events/schedule/?scheduled_at=2025-08-15T10:00:00Z" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "Comida con cliente potencial",
-    "body": "Reunión informal para discutir oportunidades de colaboración",
-    "start_time": "2024-01-18T13:00:00",
-    "end_time": "2024-01-18T14:30:00",
-    "attendees": ["prospecto@otraempresa.com"],
-    "location": "Restaurante El Mesón, Av. Principal 123",
-    "is_online_meeting": false,
-    "send_email_notification": false,
-    "reminder_minutes_before_start": 120,
-    "categories": ["Ventas", "Networking"],
-    "importance": "normal"
+    "subject": "Capacitación de Personal (Outlook)",
+    "body": "<p>Sesión de capacitación sobre el nuevo software de CRM.</p>",
+    "start_time": "2025-08-20T09:00:00",
+    "end_time": "2025-08-20T11:00:00",
+    "attendees": ["'"$TEST_EMAIL"'", "ventas@example.com"],
+    "location": "Sala de Capacitación 2",
+    "timezone": "America/Mexico_City",
+    "send_email_notification": false
   }'
 ```
 
-### 3. Verificar disponibilidad
+### 3. Obtener un Evento Específico
+```bash
+curl -X GET "$BASE_URL/outlook/calendar/events/'"$OUTLOOK_EVENT_ID"'"
+```
+
+### 4. Actualizar un Evento
+```bash
+curl -X PUT "$BASE_URL/outlook/calendar/events/'"$OUTLOOK_EVENT_ID"'" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject": "Discusión Técnica (Outlook) - Actualizada",
+    "location": "Sala de Proyectos 3",
+    "timezone": "Europe/Paris"
+  }'
+```
+
+### 5. Consultar Disponibilidad (Free/Busy)
+Verifica la disponibilidad de varios usuarios en una zona horaria específica.
 ```bash
 curl -X POST "$BASE_URL/outlook/calendar/schedule/free-busy/" \
   -H "Content-Type: application/json" \
   -d '{
-    "emails": ["persona1@empresa.com", "persona2@empresa.com", "persona3@empresa.com"],
-    "start_time": "2024-01-22T08:00:00",
-    "end_time": "2024-01-22T18:00:00",
-    "interval_minutes": 30
+    "emails": ["'"$TEST_EMAIL"'", "otro_colega@example.com"],
+    "start_time": "2025-08-18T09:00:00",
+    "end_time": "2025-08-18T18:00:00",
+    "interval_minutes": 60,
+    "timezone": "America/Argentina/Buenos_Aires"
   }'
 ```
 
-### 4. Listar eventos de Outlook
+### 6. Eliminar un Evento
 ```bash
-curl -X GET "$BASE_URL/outlook/calendar/events/?top=10"
+curl -X DELETE "$BASE_URL/outlook/calendar/events/'"$OUTLOOK_EVENT_ID"'"
 ```
 
-### 5. Buscar eventos en Outlook
-```bash
-curl -X GET "$BASE_URL/outlook/calendar/events/?search=proyecto&top=5"
-```
+---
 
-### 6. Eventos en rango de fechas
-```bash
-curl -X GET "$BASE_URL/outlook/calendar/events/?start_datetime=2024-01-15T00:00:00&end_datetime=2024-01-31T23:59:59"
-```
+## ✅ Tareas Genéricas (SMS, Llamada, Email)
 
-## 📱 Otros tipos de tareas
-
-### SMS
+### 1. Programar un SMS
 ```bash
 curl -X POST "$BASE_URL/tasks/" \
   -H "Content-Type: application/json" \
   -d '{
-    "target": "+521234567890",
-    "message": "Recordatorio: Su cita es mañana a las 10:00 AM. Para confirmar responda SI.",
+    "target": "+15551234567",
+    "message": "Recordatorio: Su cita de servicio es mañana a las 9:00 AM.",
     "task_type": "sms",
-    "scheduled_at": "2024-01-15T08:00:00"
+    "scheduled_at": "2025-08-19T14:00:00Z"
   }'
 ```
 
-### Llamada
+### 2. Programar una Llamada
 ```bash
 curl -X POST "$BASE_URL/tasks/" \
   -H "Content-Type: application/json" \
   -d '{
-    "target": "+521234567890",
-    "message": "Este es un recordatorio automático. Su pago vence mañana. Para más información, comuníquese al 01800-123-4567.",
+    "target": "+15551234568",
+    "message": "Hola. Este es un recordatorio de que su pago está programado para mañana. Gracias.",
     "task_type": "call",
-    "scheduled_at": "2024-01-15T10:00:00"
+    "scheduled_at": "2025-08-19T15:00:00Z"
   }'
 ```
 
-### WhatsApp
+### 3. Programar un Email Genérico
 ```bash
 curl -X POST "$BASE_URL/tasks/" \
   -H "Content-Type: application/json" \
   -d '{
-    "target": "+521234567890",
-    "message": "¡Hola! 👋 Le recordamos que su pedido está listo para recoger. Horario de atención: 9 AM - 6 PM.",
-    "task_type": "whatsapp",
-    "scheduled_at": "2024-01-15T09:00:00"
+    "target": "'"$TEST_EMAIL"'",
+    "message": "<h1>Confirmación de Pedido</h1><p>Su pedido #12345 ha sido enviado.</p>",
+    "task_type": "email",
+    "scheduled_at": "2025-08-19T16:00:00Z",
+    "extra_data": {
+      "subject": "Confirmación de Envío - Pedido #12345"
+    }
   }'
 ```
 
-## 🔄 Actualizar y eliminar eventos
+---
 
-### Actualizar evento de Google Calendar
-```bash
-curl -X PUT "$BASE_URL/calendar/events/{event_id}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "summary": "Reunión POSPUESTA - Sprint Planning",
-    "start_time": "2024-01-16T14:00:00",
-    "end_time": "2024-01-16T15:30:00",
-    "location": "Sala B",
-    "send_notifications": true
-  }'
-```
+## 📝 Notas
+*   **Fechas y Horas**: Todas las fechas y horas deben estar en formato ISO 8601 (`YYYY-MM-DDTHH:MM:SS`). Para `scheduled_at`, se recomienda usar el sufijo `Z` para indicar UTC.
+*   **Zona Horaria**: El campo `timezone` es crucial para que los eventos se muestren correctamente en los calendarios. Usa identificadores de la base de datos IANA (ej. `America/New_York`, `Europe/London`).
+*   **IDs de Eventos**: Después de crear un evento, la respuesta de la API incluirá un `id`. Copia y pega este ID en las variables `GOOGLE_EVENT_ID` u `OUTLOOK_EVENT_ID` para probar las operaciones de actualización y eliminación.
 
-### Eliminar evento de Google Calendar
-```bash
-curl -X DELETE "$BASE_URL/calendar/events/{event_id}?send_notifications=true"
-```
-
-### Actualizar evento de Outlook
-```bash
-curl -X PUT "$BASE_URL/outlook/calendar/events/{event_id}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "subject": "Kick-off proyecto ABC - CAMBIO DE HORA",
-    "start_time": "2024-01-17T16:00:00",
-    "end_time": "2024-01-17T17:30:00"
-  }'
-```
-
-### Cancelar evento de Outlook
-```bash
-curl -X DELETE "$BASE_URL/outlook/calendar/events/{event_id}?send_cancellation=true"
-```
-
-## 📝 Notas importantes:
-
-1. **Fechas**: Asegúrate de usar fechas futuras para las pruebas
-2. **Emails**: Reemplaza los emails de ejemplo con direcciones reales
-3. **IDs de eventos**: Después de crear un evento, usa el ID retornado para actualizar/eliminar
-4. **Zona horaria**: Las fechas están en formato ISO 8601, ajusta según tu zona horaria
-5. **Autenticación**: Asegúrate de que las credenciales en `.env` estén correctamente configuradas
-
-## 🚀 Inicio rápido
-
-1. **Verificar que el servicio está activo:**
-   ```bash
-   curl $BASE_URL/
-   ```
-
-2. **Crear un evento de prueba en Outlook (recomendado para empezar):**
-   ```bash
-   curl -X POST "$BASE_URL/outlook/calendar/events/" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "subject": "Evento de prueba",
-       "body": "Este es un evento de prueba del sistema",
-       "start_time": "2024-01-15T15:00:00",
-       "end_time": "2024-01-15T16:00:00",
-       "attendees": ["tu-email@empresa.com"],
-       "send_email_notification": true,
-       "importance": "normal"
-     }'
-   ```

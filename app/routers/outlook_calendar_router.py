@@ -13,7 +13,7 @@ from schemas import (
     TaskType,
     Task
 )
-from services import outlook_calendar_service
+from services import outlook_calendar_service, email_service
 import crud
 
 router = APIRouter(
@@ -33,34 +33,52 @@ def create_outlook_event(
     Si is_online_meeting es True, crea una reunión de Teams.
     """
     try:
+        result = outlook_calendar_service.create_outlook_event(
+            subject=event.subject,
+            body=event.body,
+            start_time=event.start_time,
+            end_time=event.end_time,
+            attendees=event.attendees,
+            location=event.location,
+            is_online_meeting=event.is_online_meeting,
+            reminder_minutes_before_start=event.reminder_minutes_before_start,
+            categories=event.categories,
+            importance=event.importance,
+            timezone=event.timezone
+        )
+
         if event.send_email_notification:
-            result = outlook_calendar_service.create_outlook_event_with_email(
-                subject=event.subject,
-                body=event.body,
-                start_time=event.start_time,
-                end_time=event.end_time,
-                attendees=event.attendees,
-                location=event.location,
-                is_online_meeting=event.is_online_meeting,
-                additional_email_content=event.additional_email_content,
-                categories=event.categories
-            )
-        else:
-            result = outlook_calendar_service.create_outlook_event(
-                subject=event.subject,
-                body=event.body,
-                start_time=event.start_time,
-                end_time=event.end_time,
-                attendees=event.attendees,
-                location=event.location,
-                is_online_meeting=event.is_online_meeting,
-                reminder_minutes_before_start=event.reminder_minutes_before_start,
-                categories=event.categories,
-                importance=event.importance
-            )
-        
+            email_body = f"""
+            <h2>Nuevo evento agendado: {event.subject}</h2>
+            <p><strong>Fecha y hora:</strong> {event.start_time.strftime('%d/%m/%Y %H:%M')} - {event.end_time.strftime('%H:%M')} ({event.timezone})</p>
+            <p><strong>Descripción:</strong></p>
+            <div style="margin-left: 20px;">{event.body}</div>
+            """
+            if event.location:
+                email_body += f"<p><strong>Ubicación:</strong> {event.location}</p>"
+            if event.is_online_meeting and result.get('onlineMeeting'):
+                join_url = result['onlineMeeting'].get('joinUrl', '')
+                if join_url:
+                    email_body += f'<p><strong>Unirse a la reunión:</strong> <a href="{join_url}">Click aquí para unirse a Teams</a></p>'
+            if event.additional_email_content:
+                email_body += f"<br/><h3>Información adicional:</h3>{event.additional_email_content}"
+            email_body += f"""
+            <br/>
+            <p>Se ha agregado este evento a tu calendario de Outlook. Recibirás un recordatorio {event.reminder_minutes_before_start} minutos antes del evento.</p>
+            <p><a href="{result.get('webLink')}">Ver evento en Outlook</a></p>
+            """
+            for attendee_email in event.attendees:
+                try:
+                    email_service.send_email(
+                        to_email=attendee_email,
+                        subject=f"Confirmación: {event.subject}",
+                        body=email_body
+                    )
+                except Exception as e:
+                    print(f"Error al enviar correo adicional a {attendee_email}: {e}")
+
         return OutlookEventResponse(**result)
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -87,6 +105,7 @@ def schedule_outlook_event(
             "end_time": event.end_time.isoformat(),
             "attendees": event.attendees,
             "location": event.location,
+            "timezone": event.timezone,
             "is_online_meeting": event.is_online_meeting,
             "send_email_notification": event.send_email_notification,
             "reminder_minutes_before_start": event.reminder_minutes_before_start,
@@ -119,7 +138,7 @@ def update_outlook_event(
     """
     try:
         # Preparar solo los campos que no son None
-        update_data = {k: v for k, v in event_update.dict().items() if v is not None}
+        update_data = {k: v for k, v in event_update.dict(exclude_unset=True).items()}
         
         result = outlook_calendar_service.update_outlook_event(
             event_id=event_id,
@@ -181,7 +200,8 @@ def get_free_busy_schedule(request: FreeBusyRequest):
             emails=request.emails,
             start_time=request.start_time,
             end_time=request.end_time,
-            interval_minutes=request.interval_minutes
+            interval_minutes=request.interval_minutes,
+            timezone=request.timezone
         )
         
         return result

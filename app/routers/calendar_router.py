@@ -12,7 +12,7 @@ from schemas import (
     TaskType,
     Task
 )
-from services import google_calendar_service
+from services import google_calendar_service, email_service
 import crud
 
 router = APIRouter(
@@ -31,29 +31,44 @@ def create_calendar_event(
     Si send_email_notification es True, también envía un correo personalizado.
     """
     try:
+        result = google_calendar_service.create_event(
+            summary=event.summary,
+            description=event.description,
+            start_time=event.start_time,
+            end_time=event.end_time,
+            attendees=event.attendees,
+            location=event.location,
+            reminder_minutes=event.reminder_minutes,
+            timezone=event.timezone
+        )
+
         if event.send_email_notification:
-            result = google_calendar_service.create_event_with_email_notification(
-                summary=event.summary,
-                description=event.description,
-                start_time=event.start_time,
-                end_time=event.end_time,
-                attendees=event.attendees,
-                location=event.location,
-                additional_email_body=event.additional_email_body
-            )
-        else:
-            result = google_calendar_service.create_event(
-                summary=event.summary,
-                description=event.description,
-                start_time=event.start_time,
-                end_time=event.end_time,
-                attendees=event.attendees,
-                location=event.location,
-                reminder_minutes=event.reminder_minutes
-            )
-        
+            email_body = f'''
+            <h2>Nuevo evento agendado: {event.summary}</h2>
+            <p><strong>Fecha y hora:</strong> {event.start_time.strftime('%d/%m/%Y %H:%M')} - {event.end_time.strftime('%H:%M')} ({event.timezone})</p>
+            <p><strong>Descripción:</strong> {event.description}</p>
+            '''
+            if event.location:
+                email_body += f"<p><strong>Ubicación:</strong> {event.location}</p>"
+            if event.additional_email_body:
+                email_body += f"<br/>{event.additional_email_body}"
+            email_body += f'''
+            <br/>
+            <p>Se ha agregado este evento a tu calendario de Google. Recibirás recordatorios 30 y 10 minutos antes del evento.</p>
+            <p><a href="{result.get('htmlLink')}">Ver evento en Google Calendar</a></p>
+            '''
+            for attendee_email in event.attendees:
+                try:
+                    email_service.send_email(
+                        to_email=attendee_email,
+                        subject=f"Invitación: {event.summary}",
+                        body=email_body
+                    )
+                except Exception as e:
+                    print(f"Error al enviar correo a {attendee_email}: {e}")
+
         return CalendarEventResponse(**result)
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -80,6 +95,7 @@ def schedule_calendar_event(
             "end_time": event.end_time.isoformat(),
             "attendees": event.attendees,
             "location": event.location,
+            "timezone": event.timezone,
             "send_email_notification": event.send_email_notification,
             "reminder_minutes": event.reminder_minutes,
             "additional_email_body": event.additional_email_body
@@ -113,7 +129,7 @@ def update_calendar_event(
     """
     try:
         # Preparar solo los campos que no son None
-        update_data = {k: v for k, v in event_update.dict().items() if v is not None}
+        update_data = {k: v for k, v in event_update.dict(exclude_unset=True).items()}
         
         result = google_calendar_service.update_event(
             event_id=event_id,

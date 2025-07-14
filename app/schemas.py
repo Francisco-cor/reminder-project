@@ -40,6 +40,7 @@ class CalendarEventCreate(BaseModel):
     end_time: datetime = Field(..., example="2024-01-15T11:00:00")
     attendees: List[str] = Field(..., example=["usuario1@example.com", "usuario2@example.com"])
     location: Optional[str] = Field(None, example="Sala de conferencias A")
+    timezone: str = Field("UTC", example="America/Mexico_City", description="Zona horaria del evento")
     send_email_notification: bool = Field(True, description="Enviar notificación por email además de la invitación de calendario")
     reminder_minutes: Optional[List[int]] = Field([30, 10], example=[30, 10])
     additional_email_body: Optional[str] = Field(None, example="Por favor traer laptop y documentos del proyecto")
@@ -51,6 +52,7 @@ class CalendarEventUpdate(BaseModel):
     end_time: Optional[datetime] = None
     attendees: Optional[List[str]] = None
     location: Optional[str] = None
+    timezone: Optional[str] = Field(None, example="America/Bogota", description="Zona horaria del evento")
     send_notifications: bool = True
 
 class CalendarEventResponse(BaseModel):
@@ -71,6 +73,7 @@ class OutlookEventCreate(BaseModel):
     end_time: datetime = Field(..., example="2024-01-15T11:00:00")
     attendees: List[str] = Field(..., example=["usuario1@example.com", "usuario2@example.com"])
     location: Optional[str] = Field(None, example="Sala de conferencias A")
+    timezone: str = Field("UTC", example="America/Mexico_City", description="Zona horaria del evento")
     is_online_meeting: bool = Field(False, description="Crear reunión de Teams")
     send_email_notification: bool = Field(True, description="Enviar correo adicional personalizado")
     reminder_minutes_before_start: int = Field(15, example=15)
@@ -85,6 +88,7 @@ class OutlookEventUpdate(BaseModel):
     end_time: Optional[datetime] = None
     attendees: Optional[List[str]] = None
     location: Optional[str] = None
+    timezone: Optional[str] = Field(None, example="America/Bogota", description="Zona horaria del evento")
 
 class OutlookEventResponse(BaseModel):
     id: str
@@ -105,3 +109,4 @@ class FreeBusyRequest(BaseModel):
     start_time: datetime = Field(..., example="2024-01-15T08:00:00")
     end_time: datetime = Field(..., example="2024-01-15T18:00:00")
     interval_minutes: int = Field(30, example=30)
+    timezone: str = Field("UTC", example="America/Mexico_City", description="Zona horaria para la consulta")
